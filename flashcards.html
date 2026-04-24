@@ -825,7 +825,7 @@
   <div class="login-modal" id="loginModal" role="dialog" aria-modal="true" aria-label="学生登录">
     <form class="login-card" id="loginForm">
       <h2>登录记录</h2>
-      <p>输入姓名和学号后，若已配置 Supabase，收藏、进度和答题记录会同步到云端；未配置时仍会保存在本机。</p>
+      <p>输入姓名和学号后，收藏、进度和答题记录会通过 Cloudflare D1 同步到云端；若数据库未绑定，则仍会保存在本机。</p>
       <label for="studentName">姓名</label>
       <input id="studentName" autocomplete="name" placeholder="例如：张三" />
       <label for="studentCode">学号</label>
@@ -837,7 +837,6 @@
     </form>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const chapters = [
       {
@@ -1072,10 +1071,7 @@
     const storageKey = 'gis-flashcard-favorites-v1';
     const progressKey = 'gis-flashcard-progress-v1';
     const studentKey = 'gis-flashcard-student-v1';
-    const supabaseConfig = {
-      url: '',
-      anonKey: ''
-    };
+    const cloudSyncEndpoint = '/api/sync';
     const chapterList = document.querySelector('#chapterList');
     const memoryScreen = document.querySelector('#memoryScreen');
     const studyScreen = document.querySelector('#studyScreen');
@@ -1118,12 +1114,7 @@
     let studyQueue = [];
     let studyMode = 'chapter';
     let student = loadStudent();
-    let supabaseClient = createSupabaseClient();
-
-    function createSupabaseClient() {
-      if (!supabaseConfig.url || !supabaseConfig.anonKey || !window.supabase) return null;
-      return window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
-    }
+    let syncTimer = null;
 
     function loadStudent() {
       try {
@@ -1137,11 +1128,11 @@
       student = nextStudent;
       localStorage.setItem(studentKey, JSON.stringify(student));
       updateUserInfo();
-      syncAllToCloud();
+      queueCloudSync();
     }
 
     function updateUserInfo() {
-      const cloudEnabled = Boolean(supabaseClient && student?.code);
+      const cloudEnabled = Boolean(student?.code);
       cloudDot.classList.toggle('online', cloudEnabled);
       userInfo.innerHTML = `<span class="cloud-dot ${cloudEnabled ? 'online' : ''}" id="cloudDotVisual"></span><strong>${student?.name || '未登录'}</strong> · ${cloudEnabled ? '云端同步' : '本机保存'}`;
       openLogin.textContent = student?.code ? '切换身份' : '登录记录';
@@ -1168,7 +1159,7 @@
     function saveFavorites() {
       favorites = normalizeFavorites(favorites);
       localStorage.setItem(storageKey, JSON.stringify(favorites));
-      syncFavoritesToCloud();
+      queueCloudSync();
     }
 
     function loadProgress() {
@@ -1188,58 +1179,30 @@
         updatedAt: Date.now()
       };
       localStorage.setItem(progressKey, JSON.stringify(progressState));
-      syncProgressToCloud();
+      queueCloudSync();
     }
 
-    async function syncAllToCloud() {
-      if (!canSync()) return;
-      await Promise.all([syncStudentToCloud(), syncFavoritesToCloud(), syncProgressToCloud()]);
+    function queueCloudSync(answer = null) {
+      if (!student?.code) return;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => syncAllToCloud(answer), answer ? 0 : 450);
     }
 
-    function canSync() {
-      return Boolean(supabaseClient && student?.code);
+    async function syncAllToCloud(answer = null) {
+      if (!student?.code) return;
+      try {
+        await fetch(cloudSyncEndpoint, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ student, favorites, progress: progressState, answer })
+        });
+      } catch (error) {
+        console.warn('云端同步失败，将继续保存在本机。', error);
+      }
     }
 
-    async function syncStudentToCloud() {
-      if (!canSync()) return;
-      await supabaseClient.from('students').upsert({
-        student_code: student.code,
-        student_name: student.name,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'student_code' });
-    }
-
-    async function syncFavoritesToCloud() {
-      if (!canSync()) return;
-      const rows = Object.entries(favorites).flatMap(([chapterId, indexes]) => indexes.map((cardIndex) => ({
-        student_code: student.code,
-        chapter_id: chapterId,
-        card_index: Number(cardIndex),
-        updated_at: new Date().toISOString()
-      })));
-
-      await supabaseClient.from('favorites').delete().eq('student_code', student.code);
-      if (rows.length) await supabaseClient.from('favorites').upsert(rows, { onConflict: 'student_code,chapter_id,card_index' });
-    }
-
-    async function syncProgressToCloud() {
-      if (!canSync()) return;
-      const rows = Object.entries(progressState).map(([chapterId, value]) => ({
-        student_code: student.code,
-        chapter_id: chapterId,
-        card_index: Number(value.index) || 0,
-        correct_count: Number(value.correct) || 0,
-        incorrect_count: Number(value.incorrect) || 0,
-        updated_at: new Date(value.updatedAt || Date.now()).toISOString()
-      }));
-
-      if (rows.length) await supabaseClient.from('progress').upsert(rows, { onConflict: 'student_code,chapter_id' });
-    }
-
-    async function recordAnswerToCloud(isCorrect) {
-      if (!canSync()) return;
-      await supabaseClient.from('answer_logs').insert({
-        student_code: student.code,
+    function recordAnswerToCloud(isCorrect) {
+      queueCloudSync({
         chapter_id: currentChapter.id,
         card_index: currentCardIndex(),
         study_mode: studyMode,
@@ -1573,7 +1536,7 @@
     studyQueue = currentChapter.cards.map((_, cardIndex) => cardIndex);
     renderCard();
     updateUserInfo();
-    syncAllToCloud();
+    queueCloudSync();
   </script>
 </body>
 </html>
