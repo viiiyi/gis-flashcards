@@ -1,7 +1,25 @@
 create table if not exists students (
   student_code text primary key,
-  student_name text not null,
+  student_name text,
   updated_at text not null
+);
+
+create table if not exists chapters (
+  chapter_id text primary key,
+  title text not null,
+  description text,
+  sort_order integer not null default 0,
+  updated_at text not null
+);
+
+create table if not exists cards (
+  chapter_id text not null,
+  card_index integer not null,
+  front text not null,
+  back text not null,
+  updated_at text not null,
+  primary key (chapter_id, card_index),
+  foreign key (chapter_id) references chapters(chapter_id) on delete cascade
 );
 
 create table if not exists favorites (

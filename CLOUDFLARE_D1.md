@@ -22,10 +22,16 @@
 
 会创建这些表：
 
+- `chapters`：章节信息
+- `cards`：抽认卡题库
 - `students`：学生姓名、学号
 - `favorites`：收藏卡片
 - `progress`：章节进度和正确/错误数
 - `answer_logs`：每次答题记录
+
+## 2.1 导入第一章题库
+
+建表后继续在 D1 控制台执行 `cards-seed.sql`，会把 `第一章：概论` 的 55 张抽认卡导入数据库。
 
 ## 3. 绑定 D1 到 Pages 项目
 
@@ -48,6 +54,7 @@
 - `index.html`
 - `functions/api/sync.js`
 - `schema-d1.sql`
+- `cards-seed.sql`
 - `CLOUDFLARE_D1.md`
 
 Cloudflare Pages 会自动重新部署。

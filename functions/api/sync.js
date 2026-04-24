@@ -18,8 +18,8 @@ async function readJson(request) {
 
 function cleanStudent(input = {}) {
   const code = String(input.code || input.student_code || '').trim().slice(0, 64);
-  const name = String(input.name || input.student_name || '').trim().slice(0, 64);
-  if (!code || !name) throw new Error('姓名和学号不能为空');
+  const name = String(input.name || input.student_name || code).trim().slice(0, 64);
+  if (!code) throw new Error('ID 不能为空');
   return { code, name };
 }
 
