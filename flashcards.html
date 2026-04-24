@@ -1359,7 +1359,6 @@
       afterActions.classList.remove('active', 'with-favorite');
       favoriteCurrent.style.display = '';
       saveProgress();
-      recordAnswerToCloud(isCorrect);
     }
 
     function currentTotal() {
@@ -1394,6 +1393,7 @@
       }
 
       saveProgress();
+      recordAnswerToCloud(isCorrect);
 
       lastMarkWasWrong = !isCorrect;
       studyActions.classList.add('hidden');
