@@ -1,0 +1,1573 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>GIS 抽认卡</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --blue: #4358ff;
+      --green: #16a34a;
+      --red: #dc2626;
+      --yellow: #facc15;
+      --ink: #2f2f2f;
+      --text: #1f2937;
+      --muted: #8f95a3;
+      --line: #dde2ee;
+      --panel: rgba(255, 255, 255, .82);
+      --card-radius: 38px;
+      --nav-height: 78px;
+      --ease-apple: cubic-bezier(.25, .1, .25, 1);
+      --ease-spring: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { min-height: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 88% 36%, rgba(202, 255, 205, .92), transparent 34%),
+        radial-gradient(circle at 24% 72%, rgba(225, 230, 255, .95), transparent 36%),
+        linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      background: none;
+      font: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button { transition: transform .22s var(--ease-spring), box-shadow .22s var(--ease-apple), background .22s var(--ease-apple), opacity .22s var(--ease-apple); }
+    button:active { transform: scale(.975); }
+    button:focus-visible { outline: 4px solid rgba(67, 88, 255, .22); outline-offset: 3px; }
+
+    .app {
+      width: min(1128px, 100%);
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0 auto;
+      padding: 28px 24px calc(var(--nav-height) + 26px);
+    }
+
+    .screen { display: none; }
+    .screen.active {
+      display: block;
+      animation: screenIn .34s var(--ease-spring) both;
+    }
+
+    @keyframes screenIn {
+      from { opacity: 0; transform: translateY(10px) scale(.992); filter: blur(2px); }
+      to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    .page-title {
+      margin: 8px 2px 8px;
+      font-size: clamp(30px, 5vw, 54px);
+      line-height: 1.15;
+      letter-spacing: -.04em;
+    }
+
+    .page-subtitle {
+      margin: 0 2px 28px;
+      color: var(--muted);
+      font-size: clamp(15px, 2.2vw, 20px);
+      font-weight: 700;
+    }
+
+    .user-bar {
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .68);
+      border: 1px solid rgba(217, 223, 238, .82);
+      box-shadow: 0 12px 34px rgba(50, 55, 80, .07);
+      backdrop-filter: blur(20px) saturate(1.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .user-info {
+      min-width: 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-info strong { color: var(--text); }
+
+    .cloud-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      margin-right: 7px;
+      border-radius: 50%;
+      background: #a5adbd;
+    }
+
+    .cloud-dot.online { background: var(--green); }
+
+    .login-button {
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: white;
+      font-size: 14px;
+      font-weight: 900;
+      box-shadow: 0 10px 22px rgba(67, 88, 255, .2);
+    }
+
+    .login-button.secondary {
+      background: rgba(67, 88, 255, .08);
+      color: var(--blue);
+      box-shadow: none;
+    }
+
+    .chapter-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .practice-panel {
+      margin: 0 0 18px;
+      padding: 20px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, .72);
+      border: 1px solid rgba(217, 223, 238, .82);
+      box-shadow: 0 18px 48px rgba(50, 55, 80, .08);
+      backdrop-filter: blur(22px) saturate(1.35);
+      animation: panelFloat .42s var(--ease-spring) both;
+    }
+
+    @keyframes panelFloat {
+      from { opacity: 0; transform: translateY(12px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .practice-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .practice-title {
+      margin: 0 0 6px;
+      font-size: clamp(22px, 3.2vw, 32px);
+      letter-spacing: -.04em;
+    }
+
+    .practice-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 750;
+      line-height: 1.45;
+    }
+
+    .practice-select {
+      min-height: 42px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.78);
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 850;
+      outline: none;
+    }
+
+    .practice-options {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .practice-option {
+      min-height: 58px;
+      border-radius: 20px;
+      background: rgba(67, 88, 255, .09);
+      color: var(--blue);
+      font-weight: 950;
+      font-size: 18px;
+      box-shadow: inset 0 0 0 1px rgba(67, 88, 255, .08);
+    }
+
+    .practice-option:hover, .chapter-card:hover, .score-button:hover, .action-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 52px rgba(50, 55, 80, .12);
+    }
+
+    .chapter-card {
+      width: 100%;
+      min-height: 132px;
+      padding: 24px;
+      border-radius: 28px;
+      background: var(--panel);
+      border: 1px solid rgba(217, 223, 238, .86);
+      box-shadow: 0 18px 48px rgba(50, 55, 80, .08);
+      text-align: left;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: center;
+      transition: transform .24s var(--ease-spring), box-shadow .24s var(--ease-apple), background .24s var(--ease-apple);
+    }
+
+    .chapter-name {
+      display: block;
+      margin-bottom: 10px;
+      font-size: clamp(22px, 3.4vw, 34px);
+      font-weight: 850;
+      letter-spacing: -.03em;
+      color: var(--text);
+    }
+
+    .chapter-meta {
+      display: block;
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 750;
+    }
+
+    .chapter-progress {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(67, 88, 255, .08);
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 850;
+    }
+
+    .chapter-arrow {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    .study-screen.active {
+      min-height: calc(100svh - var(--nav-height) - 54px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .study-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 0 0 14px;
+    }
+
+    .back-button {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .78);
+      border: 1px solid var(--line);
+      color: var(--blue);
+      font-size: 28px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+    }
+
+    .study-title {
+      flex: 1;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 17px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-shell {
+      flex: 1;
+      min-height: 0;
+      perspective: 1800px;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      height: min(68svh, 700px);
+      min-height: 470px;
+      transform-style: preserve-3d;
+      transition: transform .7s var(--ease-spring), filter .3s var(--ease-apple);
+      cursor: pointer;
+      touch-action: pan-y;
+    }
+
+    .card.is-flipped { transform: rotateY(180deg); }
+
+    .face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--card-radius);
+      background: var(--ink);
+      box-shadow: 0 28px 80px rgba(50, 55, 80, .12);
+      backface-visibility: hidden;
+      overflow: hidden;
+      transition: box-shadow .3s var(--ease-apple), background .3s var(--ease-apple);
+    }
+
+    .face.back {
+      transform: rotateY(180deg);
+      background: #f9fafc;
+      color: #25272d;
+      border: 1px solid rgba(210, 214, 226, .9);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 34px 42px 0;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: clamp(18px, 2.1vw, 28px);
+      letter-spacing: .02em;
+    }
+
+    .menu {
+      color: inherit;
+      font-size: 30px;
+      line-height: 1;
+      transform: translateY(-4px);
+    }
+
+    .content {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 64px 42px 82px;
+    }
+
+    .question, .answer {
+      width: 100%;
+      max-width: 960px;
+      margin: 0;
+      text-align: left;
+      font-weight: 850;
+      line-height: 1.52;
+      letter-spacing: -.035em;
+      word-break: break-word;
+    }
+
+    .question {
+      color: #fff;
+      font-size: clamp(34px, 5.05vw, 64px);
+    }
+
+    .answer {
+      color: #2d3038;
+      font-size: clamp(30px, 4vw, 52px);
+    }
+
+    .hint {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 30px;
+      text-align: center;
+      color: var(--muted);
+      font-size: clamp(17px, 2vw, 25px);
+      font-weight: 800;
+      pointer-events: none;
+    }
+
+    .study-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding-top: 18px;
+    }
+
+    .score-button {
+      height: 78px;
+      border-radius: 25px;
+      border: 2px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-size: 27px;
+      font-weight: 850;
+      background: rgba(255,255,255,.9);
+      box-shadow: 0 12px 30px rgba(60, 69, 110, .05);
+    }
+
+    .wrong { color: var(--red); }
+    .right { color: var(--green); }
+    .symbol { font-size: 38px; line-height: 1; }
+    .score { min-width: 24px; text-align: left; }
+
+    .after-actions {
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding-top: 18px;
+    }
+
+    .after-actions.with-favorite { grid-template-columns: 1fr 1fr; }
+    .after-actions.active { display: grid; }
+    .study-actions.hidden { display: none; }
+
+    .action-button {
+      min-height: 74px;
+      border-radius: 24px;
+      color: white;
+      font-size: 23px;
+      font-weight: 900;
+      box-shadow: 0 14px 32px rgba(36, 120, 78, .16);
+    }
+
+    .favorite-action {
+      background: var(--yellow);
+      color: #5f4500;
+      box-shadow: 0 14px 32px rgba(186, 130, 0, .18);
+    }
+
+    .favorite-action.saved {
+      background: #fde68a;
+      color: #6b4f00;
+    }
+
+    .next-action { background: var(--green); }
+
+    .progress-line {
+      height: 4px;
+      margin-top: 18px;
+      background: rgba(67, 88, 255, .1);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #4358ff, #78a0ff);
+      border-radius: inherit;
+      transition: width .25s ease;
+    }
+
+    .empty-state {
+      min-height: 260px;
+      border: 1px dashed rgba(150, 158, 178, .7);
+      border-radius: 28px;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .48);
+      font-size: 18px;
+      font-weight: 750;
+      line-height: 1.7;
+    }
+
+    .favorite-section {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 28px;
+      background: var(--panel);
+      border: 1px solid rgba(217, 223, 238, .86);
+      box-shadow: 0 18px 48px rgba(50, 55, 80, .08);
+      transition: box-shadow .2s ease, transform .2s ease;
+    }
+
+    .favorite-section h2 {
+      margin: 0 0 14px;
+      font-size: 22px;
+      letter-spacing: -.03em;
+    }
+
+    .favorite-summary {
+      width: 100%;
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--text);
+      text-align: left;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -.03em;
+    }
+
+    .favorite-summary span {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    .favorite-chevron {
+      color: var(--blue);
+      font-size: 26px;
+      transition: transform .2s ease;
+    }
+
+    .favorite-section.collapsed .favorite-chevron { transform: rotate(-90deg); }
+    .favorite-section.collapsed .favorite-list {
+      max-height: 0;
+      opacity: 0;
+      padding-top: 0;
+      transform: translateY(-6px);
+      pointer-events: none;
+    }
+
+    .favorite-list {
+      display: grid;
+      gap: 12px;
+      padding-top: 10px;
+      max-height: 1600px;
+      opacity: 1;
+      overflow: hidden;
+      transform: translateY(0);
+      transition: max-height .32s cubic-bezier(.2, .72, .2, 1), opacity .2s ease, padding-top .2s ease, transform .24s ease;
+    }
+
+    .favorite-card {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.84);
+      border: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .favorite-q {
+      margin: 0 0 10px;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 850;
+      line-height: 1.5;
+    }
+
+    .favorite-a {
+      margin: 0;
+      color: #596071;
+      font-size: 15px;
+      font-weight: 650;
+      line-height: 1.55;
+    }
+
+    .favorite-card-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .mini-button {
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: rgba(67, 88, 255, .08);
+      color: var(--blue);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .mini-button.remove {
+      background: rgba(220, 38, 38, .08);
+      color: var(--red);
+    }
+
+    .bottom-tabs {
+      position: fixed;
+      left: 50%;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      z-index: 10;
+      width: min(520px, calc(100% - 28px));
+      height: var(--nav-height);
+      transform: translateX(-50%);
+      padding: 8px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, .86);
+      border: 1px solid rgba(217, 223, 238, .9);
+      box-shadow: 0 20px 60px rgba(50, 55, 80, .14);
+      backdrop-filter: blur(18px);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .tab-button {
+      border-radius: 22px;
+      color: var(--muted);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .tab-button.active {
+      background: var(--blue);
+      color: white;
+      box-shadow: 0 10px 22px rgba(67, 88, 255, .22);
+    }
+
+    .login-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 22px;
+      background: rgba(248, 250, 252, .54);
+      backdrop-filter: blur(22px) saturate(1.2);
+    }
+
+    .login-modal.active {
+      display: grid;
+      animation: screenIn .28s var(--ease-spring) both;
+    }
+
+    .login-card {
+      width: min(430px, 100%);
+      padding: 24px;
+      border-radius: 30px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(217, 223, 238, .9);
+      box-shadow: 0 28px 80px rgba(50, 55, 80, .18);
+    }
+
+    .login-card h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: -.04em;
+    }
+
+    .login-card p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .login-card label {
+      display: block;
+      margin: 12px 0 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .login-card input {
+      width: 100%;
+      height: 50px;
+      padding: 0 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.86);
+      color: var(--text);
+      font: inherit;
+      font-weight: 800;
+      outline: none;
+    }
+
+    .login-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 760px) {
+      :root { --card-radius: 30px; --nav-height: 72px; }
+      .app { padding: max(16px, env(safe-area-inset-top)) 14px calc(var(--nav-height) + 22px); }
+      .page-title { margin-top: 6px; }
+      .practice-panel { padding: 16px; border-radius: 24px; }
+      .practice-header { display: grid; gap: 12px; }
+      .practice-options { grid-template-columns: repeat(2, 1fr); }
+      .chapter-card { min-height: 114px; padding: 20px; border-radius: 24px; }
+      .chapter-arrow { width: 46px; height: 46px; font-size: 26px; }
+      .study-screen.active { min-height: calc(100svh - var(--nav-height) - 38px); }
+      .study-header { margin-bottom: 10px; }
+      .card { height: 62svh; min-height: 390px; }
+      .face { border-radius: var(--card-radius); box-shadow: 0 18px 46px rgba(50, 55, 80, .12); }
+      .topbar { padding: 22px 24px 0; font-size: 18px; }
+      .menu { font-size: 26px; }
+      .content { align-items: center; padding: 44px 24px 68px; }
+      .question, .answer { line-height: 1.48; letter-spacing: -.04em; }
+      .question { font-size: clamp(27px, 8vw, 43px); }
+      .answer { font-size: clamp(24px, 7.1vw, 37px); }
+      .hint { bottom: 25px; font-size: 16px; }
+      .study-actions, .after-actions { padding-top: 14px; gap: 10px; }
+      .score-button, .action-button { min-height: 64px; height: 64px; border-radius: 21px; }
+      .score-button { font-size: 22px; gap: 10px; }
+      .symbol { font-size: 31px; }
+      .progress-line { margin-top: 14px; }
+      .tab-button { font-size: 17px; }
+    }
+
+    @media (max-width: 420px) {
+      .app { padding-inline: 10px; }
+      .page-subtitle { margin-bottom: 20px; }
+      .practice-option { min-height: 52px; border-radius: 18px; font-size: 17px; }
+      .card { height: 61svh; min-height: 360px; }
+      .topbar { padding: 18px 20px 0; }
+      .content { padding: 38px 20px 60px; }
+      .question { font-size: clamp(24px, 7.8vw, 33px); }
+      .answer { font-size: clamp(21px, 6.8vw, 30px); }
+      .score-button, .action-button { min-height: 58px; height: 58px; border-radius: 19px; font-size: 19px; }
+      .bottom-tabs { width: calc(100% - 20px); }
+    }
+
+    @media (max-width: 360px) {
+      .card { height: 59svh; min-height: 335px; }
+      .question { font-size: clamp(22px, 7.6vw, 29px); }
+      .answer { font-size: clamp(20px, 6.7vw, 27px); }
+      .chapter-card { grid-template-columns: 1fr; }
+      .chapter-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="screen memory-screen active" id="memoryScreen" aria-label="记忆章节">
+      <h1 class="page-title">记忆</h1>
+      <p class="page-subtitle">选择章节开始练习</p>
+      <section class="user-bar" aria-label="学生登录状态">
+        <div class="user-info" id="userInfo"><span class="cloud-dot" id="cloudDot"></span><strong>未登录</strong> · 本机保存</div>
+        <button class="login-button" id="openLogin">登录记录</button>
+      </section>
+      <section class="practice-panel" aria-label="随机练习">
+        <div class="practice-header">
+          <div>
+            <h2 class="practice-title">随机练习</h2>
+            <p class="practice-copy">从所选章节随机抽取卡片，适合课前热身或考前快刷。</p>
+          </div>
+          <select class="practice-select" id="practiceChapterSelect" aria-label="选择随机练习章节"></select>
+        </div>
+        <div class="practice-options" id="practiceOptions"></div>
+      </section>
+      <div class="chapter-list" id="chapterList"></div>
+    </section>
+
+    <section class="screen study-screen" id="studyScreen" aria-label="抽认卡练习">
+      <div class="study-header">
+        <button class="back-button" id="backToChapters" aria-label="返回章节">‹</button>
+        <div class="study-title" id="studyTitle">第一章：概论</div>
+      </div>
+
+      <section class="card-shell">
+        <article class="card" id="card" tabindex="0" role="button" aria-label="点击翻面">
+          <div class="face front">
+            <div class="topbar"><span id="counterFront">1 / 55</span><span class="menu">⋮</span></div>
+            <div class="content"><h1 class="question" id="question"></h1></div>
+            <div class="hint">查看答案</div>
+          </div>
+          <div class="face back">
+            <div class="topbar"><span id="counterBack">1 / 55</span><span class="menu">⋮</span></div>
+            <div class="content"><p class="answer" id="answer"></p></div>
+            <div class="hint">选择掌握情况</div>
+          </div>
+        </article>
+      </section>
+
+      <nav class="study-actions" id="studyActions" aria-label="答题统计">
+        <button class="score-button wrong" id="wrong" aria-label="标记错误"><span class="symbol">×</span><span class="score" id="wrongCount">0</span></button>
+        <button class="score-button right" id="right" aria-label="标记正确"><span class="score" id="rightCount">0</span><span class="symbol">✓</span></button>
+      </nav>
+
+      <nav class="after-actions" id="afterActions" aria-label="下一步操作">
+        <button class="action-button favorite-action" id="favoriteCurrent">收藏</button>
+        <button class="action-button next-action" id="nextAfterMark">下一个</button>
+      </nav>
+      <div class="progress-line" aria-hidden="true"><div class="progress-fill" id="progress"></div></div>
+    </section>
+
+    <section class="screen favorites-screen" id="favoritesScreen" aria-label="收藏卡片">
+      <h1 class="page-title">收藏</h1>
+      <p class="page-subtitle">按章节查看收藏过的抽认卡</p>
+      <div id="favoritesContent"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-tabs" aria-label="底部导航">
+    <button class="tab-button active" id="memoryTab">记忆</button>
+    <button class="tab-button" id="favoritesTab">收藏</button>
+  </nav>
+
+  <div class="login-modal" id="loginModal" role="dialog" aria-modal="true" aria-label="学生登录">
+    <form class="login-card" id="loginForm">
+      <h2>登录记录</h2>
+      <p>输入姓名和学号后，若已配置 Supabase，收藏、进度和答题记录会同步到云端；未配置时仍会保存在本机。</p>
+      <label for="studentName">姓名</label>
+      <input id="studentName" autocomplete="name" placeholder="例如：张三" />
+      <label for="studentCode">学号</label>
+      <input id="studentCode" autocomplete="username" placeholder="例如：20260101" />
+      <div class="login-actions">
+        <button class="login-button secondary" type="button" id="closeLogin">稍后再说</button>
+        <button class="login-button" type="submit">开始同步</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const chapters = [
+      {
+        id: 'chapter-1',
+        title: '第一章：概论',
+        description: 'GIS 基础概念与发展',
+        cards: [
+      {
+            "front": "数据（Data）在认识世界过程中被定义为何种形式的记录？",
+            "back": "是对事物和环境描述的直接或间接原始记录，是未经加工的原始资料。"
+      },
+      {
+            "front": "信息（Information）区别于数据的本质特征是什么？",
+            "back": "信息是数据内涵的意义，是提供关于现实世界新的事实和知识的依据。"
+      },
+      {
+            "front": "在地理信息系统中，“信息是数据的表达，数据是信息的_____”。",
+            "back": "载体"
+      },
+      {
+            "front": "信息具有的四个基本特征包括客观性、适用性、可传输性和_____。",
+            "back": "共享性"
+      },
+      {
+            "front": "地理数据（Geographical Data）的五个核心特征是什么？",
+            "back": "空间上的分布性、时间上的序列性、数量上的海量性、载体的多样性、位置与属性的对应性。"
+      },
+      {
+            "front": "地理数据特征中的“空间上的分布性”遵循什么逻辑顺序？",
+            "back": "先定位，后定性。"
+      },
+      {
+            "front": "地理对象或现象的数据描述由哪三部分组成？",
+            "back": "空间位置、属性数据（非空间数据）、时域数据。"
+      },
+      {
+            "front": "空间位置数据除了可以根据大地参照系定义坐标，还可以定义为地物间的什么关系？",
+            "back": "相对位置关系（如空间上的相邻、包含等）。"
+      },
+      {
+            "front": "属性数据（Attribute Data）主要解决的是地理环境研究中的什么问题？",
+            "back": "按照专题来表达多维和多层次的非空间属性信息。"
+      },
+      {
+            "front": "时域数据（Temporal Data）在地理信息系统中的主要作用是什么？",
+            "back": "记录数据采集或现象发生的时刻/时段，对环境模拟分析至关重要。"
+      },
+      {
+            "front": "地理信息独特的“空间相关性”特征遵循什么规律？",
+            "back": "地理事物在空间上相距越近相关性越大，反之越小，且具有区域性特点。"
+      },
+      {
+            "front": "地理信息“空间多样性”对分析结果的解释提出了什么要求？",
+            "back": "分析结果必须依赖于其位置，才能得出合乎逻辑的解释。"
+      },
+      {
+            "front": "地理信息“空间层次性”在尺度上如何体现？",
+            "back": "不同空间尺度的数据具有不同的空间信息特征。"
+      },
+      {
+            "front": "按处理对象分类，信息系统可分为空间信息系统和_____。",
+            "back": "非空间信息系统"
+      },
+      {
+            "front": "在应用层次上，地理信息系统（GIS）属于哪一类系统？",
+            "back": "决策支持系统"
+      },
+      {
+            "front": "GIS 与其他信息系统在操作对象上的根本区别是什么？",
+            "back": "GIS 的对象是按统一地理坐标编码的空间数据（点、线、面、体）。"
+      },
+      {
+            "front": "GIS 被誉为地学的第几代语言？",
+            "back": "第三代语言（用数字形式描述空间实体）。"
+      },
+      {
+            "front": "为什么说 GIS 中的属性信息处理相当于普通的事务性信息处理系统？",
+            "back": "因为属性数据描述的是除空间位置及关系外的定性或定量信息。"
+      },
+      {
+            "front": "GIS 空间数据管理中，相对于事务性数据，其最显著的物理特征是什么？",
+            "back": "不定长性（如多边形顶点数量不一）。"
+      },
+      {
+            "front": "地理信息系统海量数据的来源主要包括地理数据本身和_____。",
+            "back": "空间分析过程中不断产生的新空间数据。"
+      },
+      {
+            "front": "GIS 运行环境的五大部分组成是什么？",
+            "back": "硬件系统、软件系统、空间数据、地学模型、管理与应用人员。"
+      },
+      {
+            "front": "GIS 软件系统架构从底层到顶层依次是什么？",
+            "back": "GIS 支撑软件、GIS 平台软件、GIS 应用软件。"
+      },
+      {
+            "front": "操作系统（如 Windows, Linux）和数据库管理系统（如 Oracle）属于 GIS 软件的哪一类？",
+            "back": "GIS 支撑软件"
+      },
+      {
+            "front": "GIS 平台软件的主要表现形式包括基础应用程序和_____。",
+            "back": "软件开发包（SDK）"
+      },
+      {
+            "front": "GIS 应用软件与平台软件的关系是什么？",
+            "back": "应用软件是基于平台软件提供的功能和接口，针对行业具体业务需求二次开发而成的。"
+      },
+      {
+            "front": "在 GIS 数据中，用于表示点、线、面实体之间联系的关系称为什么？",
+            "back": "拓扑关系（Topology）。"
+      },
+      {
+            "front": "定性属性数据包括名称、类型、特性等，定量属性数据则包括_____。",
+            "back": "数量和等级"
+      },
+      {
+            "front": "地学模型（Geoscientific Model）在 GIS 中的作用是什么？",
+            "back": "构建能表达或模拟特定现象的计算机模型，为复杂应用提供解决方案。"
+      },
+      {
+            "front": "GIS 解决的 5 个基本地理问题是什么？",
+            "back": "位置（Location）、条件（Condition）、趋势（Trend）、模式（Pattern）、模拟（Simulation）。"
+      },
+      {
+            "front": "GIS 的“位置”问题主要通过哪种技术实现？",
+            "back": "空间查询技术"
+      },
+      {
+            "front": "“符合某些条件的地理对象在哪里”属于 GIS 解决的哪类基本问题？",
+            "back": "条件问题"
+      },
+      {
+            "front": "“趋势”问题要求 GIS 具备根据历史数据进行哪种分析的能力？",
+            "back": "预测未来和回溯过去。"
+      },
+      {
+            "front": "GIS 的“模式”问题主要探讨地理实体分布之间的什么？",
+            "back": "空间关系"
+      },
+      {
+            "front": "GIS 的 6 个基本功能模块包括数据采集、编辑处理、存储管理、分析查询、应用开发和_____。",
+            "back": "数据输出与可视化表达"
+      },
+      {
+            "front": "目前常用的 GIS 空间数据结构主要有矢量数据结构和_____。",
+            "back": "栅格数据结构"
+      },
+      {
+            "front": "数据可视化表达中，传递空间信息最有效的工具是什么？",
+            "back": "图形（地图）"
+      },
+      {
+            "front": "GIS 功能中的“二次开发”通常提供什么支持？",
+            "back": "完整的 API（应用程序接口）和开发环境。"
+      },
+      {
+            "front": "测量学和遥感技术在 GIS 中扮演的主要角色是什么？",
+            "back": "提供快速、可靠、多时相和廉价的多种信息源。"
+      },
+      {
+            "front": "GIS 空间分析的理论基础主要由哪门学科提供？",
+            "back": "地理学"
+      },
+      {
+            "front": "GIS 最初是从哪种技术起步的？",
+            "back": "机助制图（Computer-Aided Cartography）。"
+      },
+      {
+            "front": "GIS 与数字制图系统的主要区别在于什么？",
+            "back": "深层次的空间分析功能（如缓冲区分析、叠置分析等）。"
+      },
+      {
+            "front": "相对于 CAD，GIS 在数据处理上的强项是什么？",
+            "back": "属性功能强，能够处理复杂的地理空间自然目标，且具有强大的海量数据图库管理能力。"
+      },
+      {
+            "front": "遥感图像处理系统强调对栅格数据的几何和灰度处理，而 GIS 更侧重于实体的什么描述？",
+            "back": "空间关系描述及属性查询。"
+      },
+      {
+            "front": "1998 年由美国副总统戈尔提出的概念是_____。",
+            "back": "数字地球（Digital Earth）"
+      },
+      {
+            "front": "被称为第三代互联网应用，旨在实现资源全面共享的 GIS 模式是_____。",
+            "back": "网格 GIS（GRID GIS）"
+      },
+      {
+            "front": "VR GIS 采用哪种主要语言将数据转换到虚拟环境中？",
+            "back": "VRML（虚拟现实建模语言）。"
+      },
+      {
+            "front": "移动 GIS 实现“4A 服务”指哪四个方面？",
+            "back": "任何地方、任何时间、任何人、任何事 (Anywhere, Anytime, Anyone, Anything)。"
+      },
+      {
+            "front": "智慧城市建设中，动态获取城市空间物联信息的基础基建是什么？",
+            "back": "物联网（IoT）"
+      },
+      {
+            "front": "云计算数据中心为 GIS 用户提供的核心价值不再是硬件设备，而是_____。",
+            "back": "计算能力和可用性的各项功能。"
+      },
+      {
+            "front": "时空大数据相比传统数据，在特征上表现出更强的动态性和_____。",
+            "back": "流动性"
+      },
+      {
+            "front": "在大数据 GIS 中，哪种计算技术在数据处理和分析环节发挥重要作用？",
+            "back": "并行计算（如 Hadoop, Spark）。"
+      },
+      {
+            "front": "机器学习相比传统数据挖掘在 GIS 分析中的优势是什么？",
+            "back": "算法带有自调试参数，能通过学习自我完善，提高挖掘和预测的准确性。"
+      },
+      {
+            "front": "1:5 万与 1:1 万坡度分级数据的差异，体现了地理信息的哪种特性？",
+            "back": "空间尺度上的层次性。"
+      },
+      {
+            "front": "GIS 的物理外壳是_____。",
+            "back": "计算机化的技术系统"
+      },
+      {
+            "front": "为什么地理数据库的更新应当是分布式的？",
+            "back": "因为地理信息在区域上表现出分布式特点，且属性表现为多层次。"
+      }
+]
+      }
+    ];
+
+    const storageKey = 'gis-flashcard-favorites-v1';
+    const progressKey = 'gis-flashcard-progress-v1';
+    const studentKey = 'gis-flashcard-student-v1';
+    const supabaseConfig = {
+      url: '',
+      anonKey: ''
+    };
+    const chapterList = document.querySelector('#chapterList');
+    const memoryScreen = document.querySelector('#memoryScreen');
+    const studyScreen = document.querySelector('#studyScreen');
+    const favoritesScreen = document.querySelector('#favoritesScreen');
+    const memoryTab = document.querySelector('#memoryTab');
+    const favoritesTab = document.querySelector('#favoritesTab');
+    const practiceChapterSelect = document.querySelector('#practiceChapterSelect');
+    const practiceOptions = document.querySelector('#practiceOptions');
+    const card = document.querySelector('#card');
+    const question = document.querySelector('#question');
+    const answer = document.querySelector('#answer');
+    const counterFront = document.querySelector('#counterFront');
+    const counterBack = document.querySelector('#counterBack');
+    const progress = document.querySelector('#progress');
+    const rightCount = document.querySelector('#rightCount');
+    const wrongCount = document.querySelector('#wrongCount');
+    const studyActions = document.querySelector('#studyActions');
+    const afterActions = document.querySelector('#afterActions');
+    const favoriteCurrent = document.querySelector('#favoriteCurrent');
+    const nextAfterMark = document.querySelector('#nextAfterMark');
+    const studyTitle = document.querySelector('#studyTitle');
+    const favoritesContent = document.querySelector('#favoritesContent');
+    const userInfo = document.querySelector('#userInfo');
+    const cloudDot = document.querySelector('#cloudDot');
+    const openLogin = document.querySelector('#openLogin');
+    const loginModal = document.querySelector('#loginModal');
+    const loginForm = document.querySelector('#loginForm');
+    const closeLogin = document.querySelector('#closeLogin');
+    const studentName = document.querySelector('#studentName');
+    const studentCode = document.querySelector('#studentCode');
+
+    let currentChapter = chapters[0];
+    let index = 0;
+    let correct = 0;
+    let incorrect = 0;
+    let lastMarkWasWrong = false;
+    let favorites = loadFavorites();
+    let progressState = loadProgress();
+    let previousStudyScreen = 'memory';
+    let studyQueue = [];
+    let studyMode = 'chapter';
+    let student = loadStudent();
+    let supabaseClient = createSupabaseClient();
+
+    function createSupabaseClient() {
+      if (!supabaseConfig.url || !supabaseConfig.anonKey || !window.supabase) return null;
+      return window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+    }
+
+    function loadStudent() {
+      try {
+        return JSON.parse(localStorage.getItem(studentKey)) || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveStudent(nextStudent) {
+      student = nextStudent;
+      localStorage.setItem(studentKey, JSON.stringify(student));
+      updateUserInfo();
+      syncAllToCloud();
+    }
+
+    function updateUserInfo() {
+      const cloudEnabled = Boolean(supabaseClient && student?.code);
+      cloudDot.classList.toggle('online', cloudEnabled);
+      userInfo.innerHTML = `<span class="cloud-dot ${cloudEnabled ? 'online' : ''}" id="cloudDotVisual"></span><strong>${student?.name || '未登录'}</strong> · ${cloudEnabled ? '云端同步' : '本机保存'}`;
+      openLogin.textContent = student?.code ? '切换身份' : '登录记录';
+    }
+
+    function loadFavorites() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey)) || {};
+        return normalizeFavorites(saved);
+      } catch {
+        return {};
+      }
+    }
+
+    function normalizeFavorites(saved) {
+      return Object.fromEntries(Object.entries(saved).map(([chapterId, values]) => {
+        const unique = [...new Set((Array.isArray(values) ? values : []).map(Number))]
+          .filter(Number.isInteger)
+          .sort((a, b) => a - b);
+        return [chapterId, unique];
+      }).filter(([, values]) => values.length > 0));
+    }
+
+    function saveFavorites() {
+      favorites = normalizeFavorites(favorites);
+      localStorage.setItem(storageKey, JSON.stringify(favorites));
+      syncFavoritesToCloud();
+    }
+
+    function loadProgress() {
+      try {
+        return JSON.parse(localStorage.getItem(progressKey)) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveProgress() {
+      if (studyMode !== 'chapter') return;
+      progressState[currentChapter.id] = {
+        index,
+        correct,
+        incorrect,
+        updatedAt: Date.now()
+      };
+      localStorage.setItem(progressKey, JSON.stringify(progressState));
+      syncProgressToCloud();
+    }
+
+    async function syncAllToCloud() {
+      if (!canSync()) return;
+      await Promise.all([syncStudentToCloud(), syncFavoritesToCloud(), syncProgressToCloud()]);
+    }
+
+    function canSync() {
+      return Boolean(supabaseClient && student?.code);
+    }
+
+    async function syncStudentToCloud() {
+      if (!canSync()) return;
+      await supabaseClient.from('students').upsert({
+        student_code: student.code,
+        student_name: student.name,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'student_code' });
+    }
+
+    async function syncFavoritesToCloud() {
+      if (!canSync()) return;
+      const rows = Object.entries(favorites).flatMap(([chapterId, indexes]) => indexes.map((cardIndex) => ({
+        student_code: student.code,
+        chapter_id: chapterId,
+        card_index: Number(cardIndex),
+        updated_at: new Date().toISOString()
+      })));
+
+      await supabaseClient.from('favorites').delete().eq('student_code', student.code);
+      if (rows.length) await supabaseClient.from('favorites').upsert(rows, { onConflict: 'student_code,chapter_id,card_index' });
+    }
+
+    async function syncProgressToCloud() {
+      if (!canSync()) return;
+      const rows = Object.entries(progressState).map(([chapterId, value]) => ({
+        student_code: student.code,
+        chapter_id: chapterId,
+        card_index: Number(value.index) || 0,
+        correct_count: Number(value.correct) || 0,
+        incorrect_count: Number(value.incorrect) || 0,
+        updated_at: new Date(value.updatedAt || Date.now()).toISOString()
+      }));
+
+      if (rows.length) await supabaseClient.from('progress').upsert(rows, { onConflict: 'student_code,chapter_id' });
+    }
+
+    async function recordAnswerToCloud(isCorrect) {
+      if (!canSync()) return;
+      await supabaseClient.from('answer_logs').insert({
+        student_code: student.code,
+        chapter_id: currentChapter.id,
+        card_index: currentCardIndex(),
+        study_mode: studyMode,
+        is_correct: isCorrect
+      });
+    }
+
+    function getFavoriteSet(chapterId = currentChapter.id) {
+      return new Set((favorites[chapterId] || []).map(Number));
+    }
+
+    function setScreen(name) {
+      if (studyScreen.classList.contains('active') && name !== 'study') saveProgress();
+      memoryScreen.classList.toggle('active', name === 'memory');
+      studyScreen.classList.toggle('active', name === 'study');
+      favoritesScreen.classList.toggle('active', name === 'favorites');
+      memoryTab.classList.toggle('active', name !== 'favorites');
+      favoritesTab.classList.toggle('active', name === 'favorites');
+      if (name === 'memory') previousStudyScreen = 'memory';
+      if (name === 'study') previousStudyScreen = 'study';
+      if (name === 'favorites') renderFavorites();
+      if (name === 'memory') renderChapters();
+    }
+
+    function renderChapters() {
+      renderPracticeOptions();
+      chapterList.innerHTML = chapters.map((chapter) => `
+        <button class="chapter-card" data-chapter-id="${chapter.id}">
+          <span>
+            <span class="chapter-name">${chapter.title}</span>
+            <span class="chapter-meta">${chapter.description} · ${chapter.cards.length} 张卡片</span>
+            ${chapterProgressLabel(chapter)}
+          </span>
+          <span class="chapter-arrow">›</span>
+        </button>
+      `).join('');
+    }
+
+    function renderPracticeOptions() {
+      practiceChapterSelect.innerHTML = chapters.map((chapter) => `
+        <option value="${chapter.id}">${chapter.title}</option>
+      `).join('');
+
+      const selectedChapter = chapters.find((chapter) => chapter.id === practiceChapterSelect.value) || chapters[0];
+      const sizes = [5, 10, 20, selectedChapter.cards.length]
+        .filter((value, position, list) => value <= selectedChapter.cards.length && list.indexOf(value) === position);
+
+      practiceOptions.innerHTML = sizes.map((size) => `
+        <button class="practice-option" data-practice-size="${size}">${size === selectedChapter.cards.length ? '全部' : `${size} 张`}</button>
+      `).join('');
+    }
+
+    function chapterProgressLabel(chapter) {
+      const saved = progressState[chapter.id];
+      if (!saved) return '<span class="chapter-progress">开始学习</span>';
+      const current = Math.min((Number(saved.index) || 0) + 1, chapter.cards.length);
+      const total = (Number(saved.correct) || 0) + (Number(saved.incorrect) || 0);
+      return `<span class="chapter-progress">继续：${current}/${chapter.cards.length} · 已答 ${total}</span>`;
+    }
+
+    function startChapter(chapterId, options = {}) {
+      currentChapter = chapters.find((chapter) => chapter.id === chapterId) || chapters[0];
+      studyMode = 'chapter';
+      studyQueue = currentChapter.cards.map((_, cardIndex) => cardIndex);
+      const saved = progressState[currentChapter.id];
+      const shouldResume = options.resume !== false && saved;
+      index = shouldResume ? clampIndex(saved.index, currentChapter.cards.length) : 0;
+      correct = shouldResume ? Number(saved.correct) || 0 : 0;
+      incorrect = shouldResume ? Number(saved.incorrect) || 0 : 0;
+      rightCount.textContent = correct;
+      wrongCount.textContent = incorrect;
+      studyTitle.textContent = currentChapter.title;
+      renderCard();
+      setScreen('study');
+    }
+
+    function startRandomPractice(chapterId, amount) {
+      currentChapter = chapters.find((chapter) => chapter.id === chapterId) || chapters[0];
+      studyMode = 'practice';
+      studyQueue = shuffle(currentChapter.cards.map((_, cardIndex) => cardIndex)).slice(0, amount);
+      index = 0;
+      correct = 0;
+      incorrect = 0;
+      rightCount.textContent = correct;
+      wrongCount.textContent = incorrect;
+      studyTitle.textContent = `${currentChapter.title} · 随机练习 ${studyQueue.length} 张`;
+      renderCard();
+      setScreen('study');
+    }
+
+    function shuffle(values) {
+      const list = [...values];
+      for (let i = list.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [list[i], list[j]] = [list[j], list[i]];
+      }
+      return list;
+    }
+
+    function clampIndex(value, total) {
+      const numeric = Number(value) || 0;
+      return Math.min(Math.max(numeric, 0), Math.max(total - 1, 0));
+    }
+
+    function renderCard() {
+      const item = currentCard();
+      question.textContent = item.front;
+      answer.textContent = item.back;
+      const total = currentTotal();
+      const label = `${index + 1} / ${total}`;
+      counterFront.textContent = label;
+      counterBack.textContent = label;
+      progress.style.width = `${((index + 1) / total) * 100}%`;
+      card.classList.remove('is-flipped');
+      studyActions.classList.remove('hidden');
+      afterActions.classList.remove('active', 'with-favorite');
+      favoriteCurrent.style.display = '';
+      saveProgress();
+      recordAnswerToCloud(isCorrect);
+    }
+
+    function currentTotal() {
+      return studyMode === 'practice' ? studyQueue.length : currentChapter.cards.length;
+    }
+
+    function currentCardIndex() {
+      return studyMode === 'practice' ? studyQueue[index] : index;
+    }
+
+    function currentCard() {
+      return currentChapter.cards[currentCardIndex()];
+    }
+
+    function moveNext() {
+      index = (index + 1) % currentTotal();
+      renderCard();
+    }
+
+    function mark(isCorrect) {
+      if (!card.classList.contains('is-flipped')) {
+        card.classList.add('is-flipped');
+        return;
+      }
+
+      if (isCorrect) {
+        correct += 1;
+        rightCount.textContent = correct;
+      } else {
+        incorrect += 1;
+        wrongCount.textContent = incorrect;
+      }
+
+      saveProgress();
+
+      lastMarkWasWrong = !isCorrect;
+      studyActions.classList.add('hidden');
+      afterActions.classList.add('active');
+      afterActions.classList.toggle('with-favorite', lastMarkWasWrong);
+      favoriteCurrent.style.display = lastMarkWasWrong ? '' : 'none';
+      updateFavoriteButton();
+    }
+
+    function currentFavoriteKey() {
+      return currentCardIndex();
+    }
+
+    function isCurrentFavorite() {
+      return getFavoriteSet().has(currentFavoriteKey());
+    }
+
+    function updateFavoriteButton() {
+      const saved = isCurrentFavorite();
+      favoriteCurrent.textContent = saved ? '已收藏' : '收藏';
+      favoriteCurrent.classList.toggle('saved', saved);
+    }
+
+    function toggleCurrentFavorite() {
+      const chapterId = currentChapter.id;
+      const set = getFavoriteSet(chapterId);
+      const key = currentFavoriteKey();
+
+      if (set.has(key)) set.delete(key);
+      else set.add(key);
+
+      favorites[chapterId] = [...set].sort((a, b) => a - b);
+      if (favorites[chapterId].length === 0) delete favorites[chapterId];
+      saveFavorites();
+      updateFavoriteButton();
+    }
+
+    function removeFavorite(chapterId, cardIndex) {
+      const set = getFavoriteSet(chapterId);
+      set.delete(Number(cardIndex));
+      favorites[chapterId] = [...set].sort((a, b) => a - b);
+      if (favorites[chapterId].length === 0) delete favorites[chapterId];
+      saveFavorites();
+      renderFavorites();
+      if (chapterId === currentChapter.id) updateFavoriteButton();
+    }
+
+    function jumpToFavorite(chapterId, cardIndex) {
+      currentChapter = chapters.find((chapter) => chapter.id === chapterId) || chapters[0];
+      studyMode = 'chapter';
+      studyQueue = currentChapter.cards.map((_, queueIndex) => queueIndex);
+      index = clampIndex(cardIndex, currentChapter.cards.length);
+      correct = Number(progressState[currentChapter.id]?.correct) || 0;
+      incorrect = Number(progressState[currentChapter.id]?.incorrect) || 0;
+      rightCount.textContent = correct;
+      wrongCount.textContent = incorrect;
+      studyTitle.textContent = currentChapter.title;
+      renderCard();
+      setScreen('study');
+    }
+
+    function renderFavorites() {
+      const sections = chapters.map((chapter) => {
+        const indexes = favorites[chapter.id] || [];
+        if (indexes.length === 0) return '';
+
+        const items = indexes.map((cardIndex) => {
+          const item = chapter.cards[cardIndex];
+          if (!item) return '';
+          return `
+            <article class="favorite-card">
+              <p class="favorite-q">${cardIndex + 1}. ${item.front}</p>
+              <p class="favorite-a">${item.back}</p>
+              <div class="favorite-card-actions">
+                <button class="mini-button" data-review-favorite="${chapter.id}" data-card-index="${cardIndex}">去复习</button>
+                <button class="mini-button remove" data-remove-favorite="${chapter.id}" data-card-index="${cardIndex}">取消收藏</button>
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        return `
+          <section class="favorite-section" data-favorite-section="${chapter.id}">
+            <button class="favorite-summary" data-toggle-favorite-section="${chapter.id}">
+              ${chapter.title}
+              <span>${indexes.length} 张收藏 <b class="favorite-chevron">⌄</b></span>
+            </button>
+            <div class="favorite-list">${items}</div>
+          </section>
+        `;
+      }).join('');
+
+      favoritesContent.innerHTML = sections || '<div class="empty-state">还没有收藏的抽认卡。<br>练习时答错后可以点击黄色“收藏”按钮。</div>';
+    }
+
+    card.addEventListener('click', () => card.classList.toggle('is-flipped'));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        card.classList.toggle('is-flipped');
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!studyScreen.classList.contains('active')) return;
+      if (event.key.toLowerCase() === 'x') mark(false);
+      if (event.key.toLowerCase() === 'c') mark(true);
+      if (event.key === 'ArrowRight' && afterActions.classList.contains('active')) moveNext();
+    });
+
+    chapterList.addEventListener('click', (event) => {
+      const chapterButton = event.target.closest('[data-chapter-id]');
+      if (chapterButton) startChapter(chapterButton.dataset.chapterId);
+    });
+
+    practiceChapterSelect.addEventListener('change', renderPracticeOptions);
+
+    practiceOptions.addEventListener('click', (event) => {
+      const option = event.target.closest('[data-practice-size]');
+      if (!option) return;
+      startRandomPractice(practiceChapterSelect.value || chapters[0].id, Number(option.dataset.practiceSize));
+    });
+
+    openLogin.addEventListener('click', () => {
+      studentName.value = student?.name || '';
+      studentCode.value = student?.code || '';
+      loginModal.classList.add('active');
+      studentName.focus();
+    });
+
+    closeLogin.addEventListener('click', () => loginModal.classList.remove('active'));
+
+    loginModal.addEventListener('click', (event) => {
+      if (event.target === loginModal) loginModal.classList.remove('active');
+    });
+
+    loginForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const name = studentName.value.trim();
+      const code = studentCode.value.trim();
+      if (!name || !code) return;
+      saveStudent({ name, code });
+      loginModal.classList.remove('active');
+    });
+
+    document.querySelector('#backToChapters').addEventListener('click', () => setScreen('memory'));
+    document.querySelector('#wrong').addEventListener('click', () => mark(false));
+    document.querySelector('#right').addEventListener('click', () => mark(true));
+    favoriteCurrent.addEventListener('click', toggleCurrentFavorite);
+    nextAfterMark.addEventListener('click', moveNext);
+    memoryTab.addEventListener('click', () => setScreen(previousStudyScreen === 'study' ? 'study' : 'memory'));
+    favoritesTab.addEventListener('click', () => setScreen('favorites'));
+
+    favoritesContent.addEventListener('click', (event) => {
+      const toggle = event.target.closest('[data-toggle-favorite-section]');
+      if (toggle) {
+        toggle.closest('.favorite-section')?.classList.toggle('collapsed');
+        return;
+      }
+
+      const review = event.target.closest('[data-review-favorite]');
+      if (review) {
+        jumpToFavorite(review.dataset.reviewFavorite, Number(review.dataset.cardIndex));
+        return;
+      }
+
+      const remove = event.target.closest('[data-remove-favorite]');
+      if (remove) removeFavorite(remove.dataset.removeFavorite, Number(remove.dataset.cardIndex));
+    });
+
+    renderChapters();
+    studyQueue = currentChapter.cards.map((_, cardIndex) => cardIndex);
+    renderCard();
+    updateUserInfo();
+    syncAllToCloud();
+  </script>
+</body>
+</html>
