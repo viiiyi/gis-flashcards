@@ -22,6 +22,30 @@ create table if not exists cards (
   foreign key (chapter_id) references chapters(chapter_id) on delete cascade
 );
 
+create table if not exists exercises (
+  chapter_id text not null,
+  exercise_index integer not null,
+  question text not null,
+  option_a text not null,
+  option_b text not null,
+  option_c text not null,
+  option_d text not null,
+  correct_answer text not null,
+  explanation text not null,
+  updated_at text not null,
+  primary key (chapter_id, exercise_index),
+  foreign key (chapter_id) references chapters(chapter_id) on delete cascade
+);
+
+create table if not exists exercise_favorites (
+  student_code text not null,
+  chapter_id text not null,
+  exercise_index integer not null,
+  updated_at text not null,
+  primary key (student_code, chapter_id, exercise_index),
+  foreign key (student_code) references students(student_code) on delete cascade
+);
+
 create table if not exists favorites (
   student_code text not null,
   chapter_id text not null,

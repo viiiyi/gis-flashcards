@@ -621,7 +621,7 @@
       box-shadow: 0 20px 60px rgba(50, 55, 80, .14);
       backdrop-filter: blur(18px);
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
     }
 
@@ -705,6 +705,98 @@
       margin-top: 18px;
     }
 
+
+
+    .exercise-list { display: grid; gap: 16px; }
+
+    .exercise-screen.active {
+      min-height: calc(100svh - var(--nav-height) - 54px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .exercise-card {
+      flex: 1;
+      padding: clamp(20px, 4vw, 34px);
+      border-radius: var(--card-radius);
+      background: rgba(255,255,255,.82);
+      border: 1px solid rgba(217, 223, 238, .9);
+      box-shadow: 0 24px 70px rgba(50, 55, 80, .12);
+      backdrop-filter: blur(22px) saturate(1.2);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .exercise-counter {
+      color: var(--muted);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .exercise-question {
+      margin: 0;
+      color: var(--text);
+      font-size: clamp(24px, 4vw, 42px);
+      line-height: 1.45;
+      letter-spacing: -.035em;
+    }
+
+    .option-list { display: grid; gap: 12px; }
+
+    .option-button {
+      width: 100%;
+      min-height: 64px;
+      padding: 16px 18px;
+      border-radius: 22px;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--line);
+      color: var(--text);
+      text-align: left;
+      font-size: clamp(16px, 2vw, 20px);
+      font-weight: 800;
+      line-height: 1.45;
+      box-shadow: 0 10px 24px rgba(60, 69, 110, .05);
+    }
+
+    .option-button.correct {
+      background: rgba(22, 163, 74, .12);
+      border-color: rgba(22, 163, 74, .42);
+      color: #087333;
+    }
+
+    .option-button.incorrect {
+      background: rgba(220, 38, 38, .1);
+      border-color: rgba(220, 38, 38, .35);
+      color: #b91c1c;
+    }
+
+    .option-button:disabled { cursor: default; }
+
+    .explanation-panel {
+      display: none;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(67, 88, 255, .08);
+      color: #334155;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.7;
+      animation: panelFloat .28s var(--ease-spring) both;
+    }
+
+    .explanation-panel.active { display: block; }
+
+    .exercise-actions {
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding-top: 2px;
+    }
+
+    .exercise-actions.active { display: grid; }
+    .exercise-actions.with-favorite { grid-template-columns: 1fr 1fr; }
+
     @media (max-width: 760px) {
       :root { --card-radius: 30px; --nav-height: 72px; }
       .app { padding: max(16px, env(safe-area-inset-top)) 14px calc(var(--nav-height) + 22px); }
@@ -712,6 +804,8 @@
       .practice-panel { padding: 16px; border-radius: 24px; }
       .practice-header { display: grid; gap: 12px; }
       .practice-options { grid-template-columns: repeat(2, 1fr); }
+      .exercise-card { border-radius: 26px; }
+      .exercise-actions.with-favorite { grid-template-columns: 1fr; }
       .chapter-card { min-height: 114px; padding: 20px; border-radius: 24px; }
       .chapter-arrow { width: 46px; height: 46px; font-size: 26px; }
       .study-screen.active { min-height: calc(100svh - var(--nav-height) - 38px); }
@@ -810,6 +904,31 @@
       <div class="progress-line" aria-hidden="true"><div class="progress-fill" id="progress"></div></div>
     </section>
 
+
+
+    <section class="screen exercise-home-screen" id="exerciseHomeScreen" aria-label="练习章节">
+      <h1 class="page-title">练习</h1>
+      <p class="page-subtitle">按章节选择选择题练习</p>
+      <div class="exercise-list" id="exerciseChapterList"></div>
+    </section>
+
+    <section class="screen exercise-screen" id="exerciseScreen" aria-label="选择题练习">
+      <div class="study-header">
+        <button class="back-button" id="backToExerciseChapters" aria-label="返回练习章节">‹</button>
+        <div class="study-title" id="exerciseTitle">第一章：概论</div>
+      </div>
+      <article class="exercise-card">
+        <div class="exercise-counter" id="exerciseCounter">1 / 30</div>
+        <h2 class="exercise-question" id="exerciseQuestion"></h2>
+        <div class="option-list" id="exerciseOptions"></div>
+        <div class="explanation-panel" id="exerciseExplanation"></div>
+        <nav class="exercise-actions" id="exerciseActions" aria-label="练习下一步">
+          <button class="action-button favorite-action" id="favoriteExercise">收藏</button>
+          <button class="action-button next-action" id="nextExercise">下一题</button>
+        </nav>
+      </article>
+    </section>
+
     <section class="screen favorites-screen" id="favoritesScreen" aria-label="收藏卡片">
       <h1 class="page-title">收藏</h1>
       <p class="page-subtitle">按章节查看收藏过的抽认卡</p>
@@ -819,6 +938,7 @@
 
   <nav class="bottom-tabs" aria-label="底部导航">
     <button class="tab-button active" id="memoryTab">记忆</button>
+    <button class="tab-button" id="exerciseTab">练习</button>
     <button class="tab-button" id="favoritesTab">收藏</button>
   </nav>
 
@@ -837,6 +957,8 @@
 
   <script>
     let chapters = [];
+    let exerciseChapters = [];
+
 
     const storageKey = 'gis-flashcard-favorites-v1';
     const progressKey = 'gis-flashcard-progress-v1';
@@ -846,7 +968,10 @@
     const memoryScreen = document.querySelector('#memoryScreen');
     const studyScreen = document.querySelector('#studyScreen');
     const favoritesScreen = document.querySelector('#favoritesScreen');
+    const exerciseHomeScreen = document.querySelector('#exerciseHomeScreen');
+    const exerciseScreen = document.querySelector('#exerciseScreen');
     const memoryTab = document.querySelector('#memoryTab');
+    const exerciseTab = document.querySelector('#exerciseTab');
     const favoritesTab = document.querySelector('#favoritesTab');
     const practiceChapterSelect = document.querySelector('#practiceChapterSelect');
     const practiceOptions = document.querySelector('#practiceOptions');
@@ -871,6 +996,15 @@
     const loginForm = document.querySelector('#loginForm');
     const closeLogin = document.querySelector('#closeLogin');
     const studentCode = document.querySelector('#studentCode');
+    const exerciseChapterList = document.querySelector('#exerciseChapterList');
+    const exerciseTitle = document.querySelector('#exerciseTitle');
+    const exerciseCounter = document.querySelector('#exerciseCounter');
+    const exerciseQuestion = document.querySelector('#exerciseQuestion');
+    const exerciseOptions = document.querySelector('#exerciseOptions');
+    const exerciseExplanation = document.querySelector('#exerciseExplanation');
+    const exerciseActions = document.querySelector('#exerciseActions');
+    const favoriteExercise = document.querySelector('#favoriteExercise');
+    const nextExercise = document.querySelector('#nextExercise');
 
     let currentChapter = null;
     let index = 0;
@@ -884,6 +1018,10 @@
     let studyMode = 'chapter';
     let student = loadStudent();
     let syncTimer = null;
+    let currentExerciseChapter = null;
+    let exerciseIndex = 0;
+    let exerciseAnswered = false;
+    let lastExerciseWrong = false;
 
     function loadStudent() {
       try {
@@ -987,13 +1125,17 @@
       if (studyScreen.classList.contains('active') && name !== 'study') saveProgress();
       memoryScreen.classList.toggle('active', name === 'memory');
       studyScreen.classList.toggle('active', name === 'study');
+      exerciseHomeScreen.classList.toggle('active', name === 'exerciseHome');
+      exerciseScreen.classList.toggle('active', name === 'exercise');
       favoritesScreen.classList.toggle('active', name === 'favorites');
-      memoryTab.classList.toggle('active', name !== 'favorites');
+      memoryTab.classList.toggle('active', name === 'memory' || name === 'study');
+      exerciseTab.classList.toggle('active', name === 'exerciseHome' || name === 'exercise');
       favoritesTab.classList.toggle('active', name === 'favorites');
       if (name === 'memory') previousStudyScreen = 'memory';
       if (name === 'study') previousStudyScreen = 'study';
       if (name === 'favorites') renderFavorites();
       if (name === 'memory') renderChapters();
+      if (name === 'exerciseHome') renderExerciseChapters();
     }
 
     function renderChapters() {
@@ -1225,6 +1367,105 @@
       favoritesContent.innerHTML = sections || '<div class="empty-state">还没有收藏的抽认卡。<br>练习时答错后可以点击黄色“收藏”按钮。</div>';
     }
 
+
+    function renderExerciseChapters() {
+      exerciseChapterList.innerHTML = exerciseChapters.map((chapter) => `
+        <button class="chapter-card" data-exercise-chapter-id="${chapter.id}">
+          <span>
+            <span class="chapter-name">${chapter.title}</span>
+            <span class="chapter-meta">${chapter.description} · ${chapter.exercises.length} 道题</span>
+          </span>
+          <span class="chapter-arrow">›</span>
+        </button>
+      `).join('') || '<div class="empty-state">练习题还没有加载出来。</div>';
+    }
+
+    function startExerciseChapter(chapterId) {
+      currentExerciseChapter = exerciseChapters.find((chapter) => chapter.id === chapterId) || exerciseChapters[0];
+      if (!currentExerciseChapter) return;
+      exerciseIndex = 0;
+      exerciseTitle.textContent = currentExerciseChapter.title;
+      renderExercise();
+      setScreen('exercise');
+    }
+
+    function currentExercise() {
+      return currentExerciseChapter.exercises[exerciseIndex];
+    }
+
+    function renderExercise() {
+      const item = currentExercise();
+      exerciseAnswered = false;
+      lastExerciseWrong = false;
+      exerciseCounter.textContent = `${exerciseIndex + 1} / ${currentExerciseChapter.exercises.length}`;
+      exerciseQuestion.textContent = item.question;
+      exerciseExplanation.textContent = '';
+      exerciseExplanation.classList.remove('active');
+      exerciseActions.classList.remove('active', 'with-favorite');
+      favoriteExercise.style.display = 'none';
+      exerciseOptions.innerHTML = Object.entries(item.options).map(([key, value]) => `
+        <button class="option-button" data-option="${key}"><strong>${key}.</strong> ${value}</button>
+      `).join('');
+    }
+
+    function chooseExerciseOption(option) {
+      if (exerciseAnswered) return;
+      exerciseAnswered = true;
+      const item = currentExercise();
+      const isCorrect = option === item.correctAnswer;
+      lastExerciseWrong = !isCorrect;
+
+      exerciseOptions.querySelectorAll('.option-button').forEach((button) => {
+        const value = button.dataset.option;
+        button.disabled = true;
+        if (value === item.correctAnswer) button.classList.add('correct');
+        if (value === option && !isCorrect) button.classList.add('incorrect');
+      });
+
+      exerciseExplanation.textContent = `正确答案：${item.correctAnswer}。${item.explanation}`;
+      exerciseExplanation.classList.add('active');
+      exerciseActions.classList.add('active');
+      exerciseActions.classList.toggle('with-favorite', !isCorrect);
+      favoriteExercise.style.display = isCorrect ? 'none' : '';
+    }
+
+    function nextExerciseQuestion() {
+      exerciseIndex = (exerciseIndex + 1) % currentExerciseChapter.exercises.length;
+      renderExercise();
+    }
+
+    async function favoriteCurrentExercise() {
+      if (!student?.code) {
+        loginModal.classList.add('active');
+        studentCode.focus();
+        return;
+      }
+      await fetch('/api/exercise-favorite', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          student_code: student.code,
+          chapter_id: currentExerciseChapter.id,
+          exercise_index: exerciseIndex
+        })
+      });
+      favoriteExercise.textContent = '已收藏';
+      favoriteExercise.classList.add('saved');
+    }
+
+    async function loadExercisesFromCloud() {
+      try {
+        const response = await fetch('/api/exercises', { cache: 'no-store' });
+        if (!response.ok) throw new Error('练习题加载失败');
+        const data = await response.json();
+        exerciseChapters = Array.isArray(data.chapters) ? data.chapters : [];
+      } catch (error) {
+        console.warn('无法从数据库加载练习题。', error);
+        exerciseChapters = [];
+      }
+      renderExerciseChapters();
+    }
+
     card.addEventListener('click', () => card.classList.toggle('is-flipped'));
     card.addEventListener('keydown', (event) => {
       if (event.key === ' ' || event.key === 'Enter') {
@@ -1284,7 +1525,22 @@
     favoriteCurrent.addEventListener('click', toggleCurrentFavorite);
     nextAfterMark.addEventListener('click', moveNext);
     memoryTab.addEventListener('click', () => setScreen(previousStudyScreen === 'study' ? 'study' : 'memory'));
+    exerciseTab.addEventListener('click', () => setScreen('exerciseHome'));
     favoritesTab.addEventListener('click', () => setScreen('favorites'));
+
+    exerciseChapterList.addEventListener('click', (event) => {
+      const chapterButton = event.target.closest('[data-exercise-chapter-id]');
+      if (chapterButton) startExerciseChapter(chapterButton.dataset.exerciseChapterId);
+    });
+
+    exerciseOptions.addEventListener('click', (event) => {
+      const option = event.target.closest('[data-option]');
+      if (option) chooseExerciseOption(option.dataset.option);
+    });
+
+    nextExercise.addEventListener('click', nextExerciseQuestion);
+    favoriteExercise.addEventListener('click', favoriteCurrentExercise);
+    document.querySelector('#backToExerciseChapters').addEventListener('click', () => setScreen('exerciseHome'));
 
     favoritesContent.addEventListener('click', (event) => {
       const toggle = event.target.closest('[data-toggle-favorite-section]');
@@ -1327,6 +1583,7 @@
     }
 
     loadCardsFromCloud();
+    loadExercisesFromCloud();
   </script>
 </body>
 </html>
