@@ -1279,6 +1279,7 @@
     }
 
     function renderPracticeOptions() {
+      if (!practiceChapterSelect || !practiceOptions) return;
       practiceChapterSelect.innerHTML = chapters.map((chapter) => `
         <option value="${chapter.id}">${chapter.title}</option>
       `).join('');
@@ -1508,9 +1509,14 @@
       if (chapterButton) startChapter(chapterButton.dataset.chapterId);
     });
 
-    practiceChapterSelect.addEventListener('change', renderPracticeOptions);
+    document.addEventListener('click', (event) => {
+      const chapterButton = event.target.closest('[data-chapter-id]');
+      if (chapterButton) startChapter(chapterButton.dataset.chapterId);
+    });
 
-    practiceOptions.addEventListener('click', (event) => {
+    practiceChapterSelect?.addEventListener('change', renderPracticeOptions);
+
+    practiceOptions?.addEventListener('click', (event) => {
       const option = event.target.closest('[data-practice-size]');
       if (!option) return;
       startRandomPractice(practiceChapterSelect.value || chapters[0].id, Number(option.dataset.practiceSize));
