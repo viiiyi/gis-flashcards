@@ -1,0 +1,8 @@
+name = "gis-flashcards"
+pages_build_output_dir = "."
+compatibility_date = "2026-04-24"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gis-flashcards-db"
+database_id = "74d5285e-1167-4d4b-8623-3abf8ecc3c48"
