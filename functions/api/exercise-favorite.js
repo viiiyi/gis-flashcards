@@ -1,8 +1,15 @@
+const corsHeaders = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET, POST, OPTIONS',
+  'access-control-allow-headers': 'content-type'
+};
+
 function json(data, init = {}) {
   return new Response(JSON.stringify(data), {
     ...init,
     headers: {
       'content-type': 'application/json; charset=utf-8',
+      ...corsHeaders,
       ...(init.headers || {})
     }
   });
@@ -34,4 +41,8 @@ export async function onRequestPost({ request, env }) {
   ]);
 
   return json({ ok: true });
+}
+
+export function onRequestOptions() {
+  return new Response(null, { status: 204, headers: corsHeaders });
 }

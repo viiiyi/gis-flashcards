@@ -963,7 +963,8 @@
     const storageKey = 'gis-flashcard-favorites-v1';
     const progressKey = 'gis-flashcard-progress-v1';
     const studentKey = 'gis-flashcard-student-v1';
-    const cloudSyncEndpoint = '/api/sync';
+    const cloudApiBase = location.hostname.endsWith('pages.dev') ? '' : 'https://gis-flashcards.pages.dev';
+    const cloudSyncEndpoint = `${cloudApiBase}/api/sync`;
     const chapterList = document.querySelector('#chapterList');
     const memoryScreen = document.querySelector('#memoryScreen');
     const studyScreen = document.querySelector('#studyScreen');
@@ -1440,7 +1441,7 @@
         studentCode.focus();
         return;
       }
-      await fetch('/api/exercise-favorite', {
+      await fetch(`${cloudApiBase}/api/exercise-favorite`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -1455,7 +1456,7 @@
 
     async function loadExercisesFromCloud() {
       try {
-        const response = await fetch('/api/exercises', { cache: 'no-store' });
+        const response = await fetch(`${cloudApiBase}/api/exercises`, { cache: 'no-store' });
         if (!response.ok) throw new Error('练习题加载失败');
         const data = await response.json();
         exerciseChapters = Array.isArray(data.chapters) ? data.chapters : [];
@@ -1561,7 +1562,7 @@
 
     async function loadCardsFromCloud() {
       try {
-        const response = await fetch('/api/cards', { cache: 'no-store' });
+        const response = await fetch(`${cloudApiBase}/api/cards`, { cache: 'no-store' });
         if (!response.ok) throw new Error('题库加载失败');
         const data = await response.json();
         chapters = Array.isArray(data.chapters) ? data.chapters : [];
